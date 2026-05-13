@@ -85,7 +85,11 @@ function render() {
   const height = window.innerHeight;
 
   // Background
-  ctx.fillStyle = currentTheme.bg;
+  if (currentTheme.rainbow) {
+    ctx.fillStyle = `hsl(${(rainbowHue + 180) % 360}, 100%, 60%)`;
+  } else {
+    ctx.fillStyle = currentTheme.bg;
+  }
   ctx.fillRect(0, 0, width, height);
 
   if (text.trim() === '') return;
@@ -112,9 +116,14 @@ function render() {
   ctx.textBaseline = 'alphabetic';
 
   // Foreground color — cycle hue for rainbow, fixed otherwise
-  ctx.fillStyle = currentTheme.rainbow
-    ? `hsl(${rainbowHue}, 100%, 60%)`
-    : currentTheme.fg;
+  if (currentTheme.rainbow) {
+    const bgHue = (rainbowHue + 180) % 360;
+    ctx.fillStyle = `hsl(${bgHue}, 100%, 60%)`;
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = `hsl(${rainbowHue}, 100%, 60%)`;
+  } else {
+    ctx.fillStyle = currentTheme.fg;
+  }
 
   const startX = (width - renderedInkWidth) / 2 + metrics.actualBoundingBoxLeft * finalScaleFactor;
   const startY = (height - renderedInkHeight) / 2 + finalAscent;
@@ -156,7 +165,7 @@ input.addEventListener('blur', () => {
 // Check if the current text matches a theme name and switch if so
 function checkThemeTrigger() {
   const lower = text.toLowerCase();
-  if (THEMES[lower]) {
+  if (THEMES[lower] && THEMES[lower] !== currentTheme) {
     const name = lower;
     text = '';
     input.value = '';

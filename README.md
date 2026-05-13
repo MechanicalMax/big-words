@@ -45,13 +45,13 @@ npm run dev
 
 ## 🎨 Themes
 
-Type a theme name and it switches instantly — the text clears automatically.
+Type a theme name and it switches instantly — the text clears automatically. Typing the name of the theme you're already on does nothing (no accidental clears).
 
 | Word | Theme |
 |---|---|
 | `black` | White text on black (default) |
 | `white` | Black text on white |
-| `rainbow` | Cycling hue animation on black |
+| `rainbow` | Complementary cycling colors on both text and background |
 
 These are intentionally undocumented in the app — consider them easter eggs.
 
