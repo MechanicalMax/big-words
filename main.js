@@ -156,6 +156,8 @@ document.addEventListener('fullscreenchange', () => {
 
 // --- INPUT HANDLING ---
 
+const isMobile = () => window.matchMedia('(pointer: coarse)').matches;
+
 function keepFocused() {
   input.focus({ preventScroll: true });
 }
@@ -163,12 +165,25 @@ function keepFocused() {
 window.addEventListener('load', keepFocused);
 
 document.addEventListener('pointerdown', () => {
-  requestFullscreen();
+  // Focus must happen synchronously inside the gesture handler so mobile
+  // browsers treat it as user-initiated and show the keyboard.
   keepFocused();
+
+  // Fullscreen is async — request it after focus so it doesn't break the
+  // gesture chain. Skip on mobile: fullscreen hides the address bar but also
+  // prevents the keyboard from appearing on some browsers.
+  if (!isMobile()) {
+    requestFullscreen();
+  }
 });
 
+// On desktop, re-focus if the input loses focus unexpectedly.
+// On mobile, don't fight the browser — letting blur happen allows the
+// keyboard to be dismissed naturally.
 input.addEventListener('blur', () => {
-  setTimeout(keepFocused, 50);
+  if (!isMobile()) {
+    setTimeout(keepFocused, 50);
+  }
 });
 
 // Check if the current text matches a theme name and switch if so
