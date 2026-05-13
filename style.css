@@ -50,10 +50,4 @@ canvas {
   caret-color: transparent;
 }
 
-/* Show a subtle focus ring on the canvas when the input is focused,
-   so keyboard users have a visual cue that the app is active */
-#text-input:focus-visible + * ,
-#app:focus-within canvas {
-  outline: 3px solid rgba(255, 255, 255, 0.4);
-  outline-offset: -3px;
-}
+
