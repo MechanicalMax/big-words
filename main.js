@@ -82,10 +82,12 @@ function resizeCanvas() {
   canvas.width = width * dpr;
   canvas.height = height * dpr;
 
-  ctx.scale(dpr, dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   render();
 }
+
+window.addEventListener('resize', resizeCanvas);
 
 function render() {
   const width = window.innerWidth;
