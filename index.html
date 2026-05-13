@@ -13,14 +13,24 @@
   </head>
   <body>
     <div id="app">
-      <!-- Our math-driven canvas -->
-      <canvas id="stage"></canvas>
-      
-      <!-- Minimal UI -->
-      <div id="ui">
-        <button id="fs-btn">Go Fullscreen</button>
-        <p class="hint">Start typing... (Enter to clear)</p>
-      </div>
+      <!-- Canvas renders the text -->
+      <canvas id="stage" role="img" aria-label="Type!"></canvas>
+
+      <!-- Hidden input captures keyboard on desktop; will be used for mobile too -->
+      <input
+        id="text-input"
+        type="text"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label="Type text to display"
+        aria-describedby="sr-hint"
+      />
+
+      <!-- Screen reader announcements -->
+      <div id="sr-live" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+      <div id="sr-hint" class="sr-only">Type to display text full screen. Press Enter to clear.</div>
     </div>
     <script type="module" src="/main.js"></script>
   </body>
