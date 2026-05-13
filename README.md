@@ -4,7 +4,7 @@ A minimal, full-screen text display tool. Type anything and it fills your entire
 
 **[Try it live →](https://bigwords.maximusshurr.com/)**
 
-![Big Words screenshot](BigWords.png)
+![Big Words screenshot](public/BigWords.png)
 
 ## ✨ Features
 
@@ -42,13 +42,20 @@ npm run dev
 | `Enter` | Clears the screen |
 | Fullscreen button | Toggles fullscreen (fades while typing) |
 
-## 🏗️ Building for Production
+## 🏗️ Deployment
 
+This project is deployed via [Cloudflare Pages](https://pages.cloudflare.com/). Pushes to `main` trigger an automatic build and deploy with instant cache invalidation.
+
+To deploy your own fork:
+1. Go to Cloudflare Pages → Create a project → Connect to Git
+2. Select your repo
+3. Set the build command to `npm run build` and output directory to `dist`
+4. Add your custom domain in the Pages project settings
+
+To build locally:
 ```bash
 npm run build
 ```
-
-The output goes to `dist/` and can be deployed to any static host (GitHub Pages, Netlify, Vercel, etc.).
 
 ## 🗺️ Roadmap
 
