@@ -9,18 +9,53 @@ const srLive = document.getElementById('sr-live');
 let text = 'Type!';
 const fontFamily = 'Arial, sans-serif';
 
+// --- THEMES ---
+
+const THEMES = {
+  black: { bg: '#000000', fg: '#ffffff', rainbow: false },
+  white: { bg: '#ffffff', fg: '#000000', rainbow: false },
+  rainbow: { bg: '#000000', fg: null,    rainbow: true  },
+};
+
+let currentTheme = THEMES.black;
+let rainbowHue = 0;
+let rainbowRafId = null;
+
+function applyTheme(name) {
+  const theme = THEMES[name];
+  if (!theme) return;
+
+  // Stop any running rainbow animation
+  if (rainbowRafId !== null) {
+    cancelAnimationFrame(rainbowRafId);
+    rainbowRafId = null;
+  }
+
+  currentTheme = theme;
+  document.documentElement.style.setProperty('background-color', theme.bg);
+  document.body.style.backgroundColor = theme.bg;
+
+  if (theme.rainbow) {
+    animateRainbow();
+  } else {
+    render();
+  }
+}
+
+function animateRainbow() {
+  rainbowHue = (rainbowHue + 1) % 360;
+  render();
+  rainbowRafId = requestAnimationFrame(animateRainbow);
+}
+
 // --- SCREEN READER ANNOUNCEMENTS ---
 
 let announceTimer = null;
 
-/**
- * Debounced announcement so screen readers aren't flooded on every keystroke.
- */
 function announce(msg) {
   clearTimeout(announceTimer);
   announceTimer = setTimeout(() => {
     srLive.textContent = '';
-    // Force re-announcement by toggling content
     requestAnimationFrame(() => {
       srLive.textContent = msg || 'Cleared';
     });
@@ -29,9 +64,6 @@ function announce(msg) {
 
 // --- CANVAS RENDERING ---
 
-/**
- * Sizes the canvas to the window and handles DPI scaling.
- */
 function resizeCanvas() {
   const width = window.innerWidth;
   const height = window.innerHeight;
@@ -48,14 +80,13 @@ function resizeCanvas() {
   render();
 }
 
-/**
- * Renders text scaled to fill the screen as large as possible.
- */
 function render() {
   const width = window.innerWidth;
   const height = window.innerHeight;
 
-  ctx.clearRect(0, 0, width, height);
+  // Background
+  ctx.fillStyle = currentTheme.bg;
+  ctx.fillRect(0, 0, width, height);
 
   if (text.trim() === '') return;
 
@@ -79,63 +110,61 @@ function render() {
 
   ctx.font = `${finalFontSize}px ${fontFamily}`;
   ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = '#ffffff';
+
+  // Foreground color — cycle hue for rainbow, fixed otherwise
+  ctx.fillStyle = currentTheme.rainbow
+    ? `hsl(${rainbowHue}, 100%, 60%)`
+    : currentTheme.fg;
 
   const startX = (width - renderedInkWidth) / 2 + metrics.actualBoundingBoxLeft * finalScaleFactor;
   const startY = (height - renderedInkHeight) / 2 + finalAscent;
 
   ctx.fillText(text, startX, startY);
 
-  // Keep canvas aria-label in sync for screen readers
   canvas.setAttribute('aria-label', text);
 }
 
 // --- FULLSCREEN ---
 
-/**
- * Requests fullscreen on the document element.
- * Must be called from within a user gesture.
- */
 function requestFullscreen() {
   if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {
-      // Silently ignore — some browsers/contexts block fullscreen (e.g. iframes)
-    });
+    document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
   }
 }
 
-// Re-focus the input whenever fullscreen changes (focus can be lost on transition)
 document.addEventListener('fullscreenchange', () => {
   input.focus();
 });
 
 // --- INPUT HANDLING ---
 
-/**
- * Keeps the hidden input focused so keyboard events are always captured.
- * We use the input element rather than raw keydown so mobile keyboards work too.
- */
 function keepFocused() {
   input.focus({ preventScroll: true });
 }
 
-// Focus on load
 window.addEventListener('load', keepFocused);
 
-// Re-focus if the user clicks/taps anywhere
-document.addEventListener('pointerdown', (e) => {
-  // First interaction: request fullscreen (requires user gesture)
+document.addEventListener('pointerdown', () => {
   requestFullscreen();
   keepFocused();
 });
 
-// Prevent the input from losing focus to anything else
 input.addEventListener('blur', () => {
-  // Small delay so legitimate focus changes (e.g. browser UI) aren't fought
   setTimeout(keepFocused, 50);
 });
 
-// Desktop: intercept keydown for Backspace and Enter before the input value changes
+// Check if the current text matches a theme name and switch if so
+function checkThemeTrigger() {
+  const lower = text.toLowerCase();
+  if (THEMES[lower]) {
+    const name = lower;
+    text = '';
+    input.value = '';
+    applyTheme(name);
+    announce(`Theme changed to ${name}`);
+  }
+}
+
 window.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
 
@@ -158,21 +187,17 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// Desktop + Mobile: sync single character additions via the input event
 input.addEventListener('input', () => {
-  // input.value may contain the full string on mobile (e.g. after autocomplete)
-  // On desktop it will be one character ahead of `text` after a printable key
   const newValue = input.value;
 
   if (newValue.length > text.length) {
-    // Characters were added — append only the new portion
     text += newValue.slice(text.length);
   } else {
-    // Fallback: trust the input value directly (e.g. mobile IME composition)
     text = newValue;
   }
 
   render();
+  checkThemeTrigger();
   announce(text);
 });
 
@@ -180,5 +205,6 @@ input.addEventListener('input', () => {
 window.addEventListener('resize', resizeCanvas);
 
 // --- INIT ---
+applyTheme('black');
 resizeCanvas();
 keepFocused();

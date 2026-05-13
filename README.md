@@ -10,8 +10,10 @@ A minimal, full-screen text display tool. Type anything and it fills your entire
 
 - **Pixel-perfect scaling** — text always fills the screen edge-to-edge, no matter what you type
 - **High-DPI support** — crisp rendering on Retina and other high-density displays
-- **Zero dependencies** — just a canvas, some math, and a keyboard
-- **Fullscreen mode** — one click to go distraction-free
+- **Auto fullscreen** — enters fullscreen on first interaction, no button needed
+- **Color themes** — three built-in themes, triggered by typing their name
+- **PWA** — installable on desktop and mobile for offline use
+- **Accessible** — screen reader support via ARIA live regions and canvas labels
 
 ## 🚀 Getting Started
 
@@ -40,11 +42,22 @@ npm run dev
 | Any key | Adds a character to the display |
 | `Backspace` | Removes the last character |
 | `Enter` | Clears the screen |
-| Fullscreen button | Toggles fullscreen (fades while typing) |
+
+## 🎨 Themes
+
+Type a theme name and it switches instantly — the text clears automatically.
+
+| Word | Theme |
+|---|---|
+| `black` | White text on black (default) |
+| `white` | Black text on white |
+| `rainbow` | Cycling hue animation on black |
+
+These are intentionally undocumented in the app — consider them easter eggs.
 
 ## 🏗️ Deployment
 
-This project is deployed via [Cloudflare Pages](https://pages.cloudflare.com/). Pushes to `main` trigger an automatic build and deploy with instant cache invalidation.
+This project is deployed via [Cloudflare Pages](https://pages.cloudflare.com/). Pushes to `main` trigger an automatic build and deploy.
 
 To deploy your own fork:
 1. Go to Cloudflare Pages → Create a project → Connect to Git
@@ -59,10 +72,9 @@ npm run build
 
 ## 🗺️ Roadmap
 
-- **Keyboard shortcuts** — quick toggles for color themes and fullscreen
-- **Accessibility** — screen-reader support and ARIA labels
-- **PWA support** — installable for offline use on mobile
 - **URL state** — encode the current message in the URL for easy sharing
+- **More themes** — additional magic words
+- **Mobile input** — tap-to-type with native keyboard on touch devices
 
 ## 🤝 Contributing
 
