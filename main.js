@@ -37,6 +37,11 @@ function applyTheme(name) {
   document.documentElement.style.setProperty('background-color', theme.bg);
   document.body.style.backgroundColor = theme.bg;
 
+  // Update PWA/browser chrome color to match the theme background.
+  // Rainbow cycles too fast to track, so default to black.
+  const themeColor = theme.rainbow ? '#000000' : theme.bg;
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', themeColor);
+
   if (theme.rainbow) {
     animateRainbow();
   } else {
