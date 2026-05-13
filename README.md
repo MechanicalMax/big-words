@@ -10,7 +10,8 @@ A minimal, full-screen text display tool. Type anything and it fills your entire
 
 - **Pixel-perfect scaling** — text always fills the screen edge-to-edge, no matter what you type
 - **High-DPI support** — crisp rendering on Retina and other high-density displays
-- **Auto fullscreen** — enters fullscreen on first interaction, no button needed
+- **Auto fullscreen** — enters fullscreen on first interaction on desktop, no button needed
+- **Mobile support** — tap anywhere to bring up the native keyboard on touch devices
 - **Color themes** — three built-in themes, triggered by typing their name
 - **Shareable URLs** — message and theme are encoded in the URL automatically
 - **PWA** — installable on desktop and mobile for offline use
@@ -37,6 +38,10 @@ npm run dev
 4. Open your browser and navigate to the provided `localhost` URL.
 
 ## ⌨️ Usage
+
+**Desktop:** just start typing — no click needed.
+
+**Mobile:** tap anywhere to open the native keyboard. Tap "Done" to dismiss it.
 
 | Key | Action |
 |---|---|
@@ -81,8 +86,9 @@ npm run build
 
 ## 🗺️ Roadmap
 
+Core features done!
+
 - **More themes** — additional magic words
-- **Mobile input** — tap-to-type with native keyboard on touch devices
 
 ## 🤝 Contributing
 
