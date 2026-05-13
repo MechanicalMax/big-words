@@ -12,6 +12,7 @@ A minimal, full-screen text display tool. Type anything and it fills your entire
 - **High-DPI support** — crisp rendering on Retina and other high-density displays
 - **Auto fullscreen** — enters fullscreen on first interaction, no button needed
 - **Color themes** — three built-in themes, triggered by typing their name
+- **Shareable URLs** — message and theme are encoded in the URL automatically
 - **PWA** — installable on desktop and mobile for offline use
 - **Accessible** — screen reader support via ARIA live regions and canvas labels
 
@@ -43,6 +44,14 @@ npm run dev
 | `Backspace` | Removes the last character |
 | `Enter` | Clears the screen |
 
+## 🔗 Sharing
+
+The URL updates automatically as you type — just copy and share it. The recipient lands on the same message and theme, no setup needed. The default black theme is omitted from the URL to keep links clean.
+
+Examples:
+- `bigwords.maximusshurr.com/?m=Hello`
+- `bigwords.maximusshurr.com/?m=Hello&t=white`
+
 ## 🎨 Themes
 
 Type a theme name and it switches instantly — the text clears automatically. Typing the name of the theme you're already on does nothing (no accidental clears).
@@ -72,7 +81,6 @@ npm run build
 
 ## 🗺️ Roadmap
 
-- **URL state** — encode the current message in the URL for easy sharing
 - **More themes** — additional magic words
 - **Mobile input** — tap-to-type with native keyboard on touch devices
 

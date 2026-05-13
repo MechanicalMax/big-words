@@ -18,6 +18,7 @@ const THEMES = {
 };
 
 let currentTheme = THEMES.black;
+let currentThemeName = 'black';
 let rainbowHue = 0;
 let rainbowRafId = null;
 
@@ -32,6 +33,7 @@ function applyTheme(name) {
   }
 
   currentTheme = theme;
+  currentThemeName = name;
   document.documentElement.style.setProperty('background-color', theme.bg);
   document.body.style.backgroundColor = theme.bg;
 
@@ -170,6 +172,7 @@ function checkThemeTrigger() {
     text = '';
     input.value = '';
     applyTheme(name);
+    updateURL();
     announce(`Theme changed to ${name}`);
   }
 }
@@ -182,6 +185,7 @@ window.addEventListener('keydown', (e) => {
     text = '';
     input.value = '';
     render();
+    updateURL();
     announce('Cleared');
     return;
   }
@@ -191,6 +195,7 @@ window.addEventListener('keydown', (e) => {
     text = text.slice(0, -1);
     input.value = text;
     render();
+    updateURL();
     announce(text || 'Cleared');
     return;
   }
@@ -207,13 +212,39 @@ input.addEventListener('input', () => {
 
   render();
   checkThemeTrigger();
+  updateURL();
   announce(text);
 });
 
-// --- RESIZE ---
-window.addEventListener('resize', resizeCanvas);
+// --- URL STATE ---
+
+function updateURL() {
+  const params = new URLSearchParams();
+  params.set('m', text);
+  if (currentThemeName !== 'black') {
+    params.set('t', currentThemeName);
+  }
+  history.replaceState(null, '', '?' + params.toString());
+}
+
+function readURL() {
+  const params = new URLSearchParams(window.location.search);
+  const msg = params.get('m');
+  const theme = params.get('t');
+
+  if (msg !== null) {
+    text = msg;
+    input.value = msg;
+  }
+
+  if (theme && THEMES[theme]) {
+    currentThemeName = theme;
+  }
+}
 
 // --- INIT ---
-applyTheme('black');
+readURL();
+applyTheme(currentThemeName);
 resizeCanvas();
 keepFocused();
+updateURL();
