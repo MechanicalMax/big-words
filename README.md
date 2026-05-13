@@ -2,7 +2,7 @@
 
 A minimal, full-screen text display tool. Type anything and it fills your entire screen — perfect for presentations, classrooms, live events, or anywhere you need to show text at a distance.
 
-**[Try it live →](https://yourusername.github.io/big-words)**
+**[Try it live →](https://bigwords.maximusshurr.com/)**
 
 ![Big Words screenshot](BigWords.png)
 
@@ -17,7 +17,7 @@ A minimal, full-screen text display tool. Type anything and it fills your entire
 
 1. Clone the repo:
 ```bash
-git clone https://github.com/yourusername/big-words.git
+git clone https://github.com/MechanicalMax/big-words
 cd big-words
 ```
 
@@ -69,4 +69,4 @@ Contributions are welcome. If you have an idea to make this faster, more accessi
 
 ## 📄 License
 
-MIT — free to use, modify, and distribute.
+[MIT](LICENSE) — free to use, modify, and distribute.
