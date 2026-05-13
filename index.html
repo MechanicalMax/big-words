@@ -10,17 +10,43 @@
     <title>Big Words</title>
     <link rel="icon" type="image/png" href="/BigWordsLogo.png" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
+
+    <!-- Open Graph / Social sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bigwords.maximusshurr.com/" />
+    <meta property="og:title" content="Big Words" />
+    <meta property="og:description" content="Type anything and it fills your entire screen. Perfect for presentations, classrooms, and live events." />
+    <meta property="og:image" content="https://bigwords.maximusshurr.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter / X card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Big Words" />
+    <meta name="twitter:description" content="Type anything and it fills your entire screen. Perfect for presentations, classrooms, and live events." />
+    <meta name="twitter:image" content="https://bigwords.maximusshurr.com/og-image.png" />
   </head>
   <body>
     <div id="app">
-      <!-- Our math-driven canvas -->
-      <canvas id="stage"></canvas>
-      
-      <!-- Minimal UI -->
-      <div id="ui">
-        <button id="fs-btn">Go Fullscreen</button>
-        <p class="hint">Start typing... (Enter to clear)</p>
-      </div>
+      <!-- Canvas renders the text -->
+      <canvas id="stage" role="img" aria-label="Type!"></canvas>
+
+      <!-- Hidden input captures keyboard on desktop; will be used for mobile too -->
+      <input
+        id="text-input"
+        type="text"
+        inputmode="text"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label="Type text to display"
+        aria-describedby="sr-hint"
+      />
+
+      <!-- Screen reader announcements -->
+      <div id="sr-live" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+      <div id="sr-hint" class="sr-only">Type to display text full screen. Press Enter to clear.</div>
     </div>
     <script type="module" src="/main.js"></script>
   </body>

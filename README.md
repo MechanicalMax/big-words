@@ -10,8 +10,12 @@ A minimal, full-screen text display tool. Type anything and it fills your entire
 
 - **Pixel-perfect scaling** — text always fills the screen edge-to-edge, no matter what you type
 - **High-DPI support** — crisp rendering on Retina and other high-density displays
-- **Zero dependencies** — just a canvas, some math, and a keyboard
-- **Fullscreen mode** — one click to go distraction-free
+- **Auto fullscreen** — enters fullscreen on first interaction on desktop, no button needed
+- **Mobile support** — tap anywhere to bring up the native keyboard on touch devices
+- **Color themes** — three built-in themes, triggered by typing their name
+- **Shareable URLs** — message and theme are encoded in the URL automatically
+- **PWA** — installable on desktop and mobile for offline use
+- **Accessible** — screen reader support via ARIA live regions and canvas labels
 
 ## 🚀 Getting Started
 
@@ -35,16 +39,39 @@ npm run dev
 
 ## ⌨️ Usage
 
+**Desktop:** just start typing — no click needed.
+
+**Mobile:** tap anywhere to open the native keyboard. Tap "Done" to dismiss it.
+
 | Key | Action |
 |---|---|
 | Any key | Adds a character to the display |
 | `Backspace` | Removes the last character |
 | `Enter` | Clears the screen |
-| Fullscreen button | Toggles fullscreen (fades while typing) |
+
+## 🔗 Sharing
+
+The URL updates automatically as you type — just copy and share it. The recipient lands on the same message and theme, no setup needed. The default black theme is omitted from the URL to keep links clean.
+
+Examples:
+- `bigwords.maximusshurr.com/?m=Hello`
+- `bigwords.maximusshurr.com/?m=Hello&t=white`
+
+## 🎨 Themes
+
+Type a theme name and it switches instantly — the text clears automatically. Typing the name of the theme you're already on does nothing (no accidental clears).
+
+| Word | Theme |
+|---|---|
+| `black` | White text on black (default) |
+| `white` | Black text on white |
+| `rainbow` | Complementary cycling colors on both text and background |
+
+These are intentionally undocumented in the app — consider them easter eggs.
 
 ## 🏗️ Deployment
 
-This project is deployed via [Cloudflare Pages](https://pages.cloudflare.com/). Pushes to `main` trigger an automatic build and deploy with instant cache invalidation.
+This project is deployed via [Cloudflare Pages](https://pages.cloudflare.com/). Pushes to `main` trigger an automatic build and deploy.
 
 To deploy your own fork:
 1. Go to Cloudflare Pages → Create a project → Connect to Git
@@ -59,10 +86,9 @@ npm run build
 
 ## 🗺️ Roadmap
 
-- **Keyboard shortcuts** — quick toggles for color themes and fullscreen
-- **Accessibility** — screen-reader support and ARIA labels
-- **PWA support** — installable for offline use on mobile
-- **URL state** — encode the current message in the URL for easy sharing
+Core features done!
+
+- **More themes** — additional magic words
 
 ## 🤝 Contributing
 
