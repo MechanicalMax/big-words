@@ -9,6 +9,12 @@
     <h1>Listener / Viewer</h1>
     <p id="status">Connecting...</p>
     <h2>Current Value: <span id="display-text">—</span></h2>
+
+    <div id="takeover" hidden>
+      <p>The host has disconnected. Want to take over?</p>
+      <button id="takeover-btn">Become Host</button>
+    </div>
+
     <script type="module" src="/src/listener.ts"></script>
   </body>
 </html>
