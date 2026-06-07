@@ -1,7 +1,7 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "big-words",
-  "compatibility_date": "2026-05-13",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-05-15",
   "observability": {
     "enabled": true
   },
@@ -10,5 +10,19 @@
   },
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "STRING_STATE_ROOM",
+        "class_name": "StringStateRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["StringStateRoom"]
+    }
   ]
 }
