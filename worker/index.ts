@@ -36,12 +36,24 @@ export class StringStateRoom {
     const url = new URL(request.url);
     const { 0: client, 1: server } = new WebSocketPair();
 
-    // Tag the socket so we know its role in webSocketMessage
-    const role = url.pathname.startsWith('/listen/') ? 'listener' : 'emitter';
-    this.state.acceptWebSocket(server, [role]);
+    if (url.pathname.startsWith('/emit/')) {
+      // --- LOCK CHECK ---
+      // getWebSockets('emitter') survives hibernation; no in-memory state needed.
+      const existingEmitters = this.state.getWebSockets('emitter');
+      if (existingEmitters.length > 0) {
+        // Reject the newcomer — a host is already active.
+        server.accept();
+        server.close(4000, 'Room already has an active host.');
+        return new Response(null, { status: 101, webSocket: client });
+      }
 
-    // Send the current stored value immediately to new listeners
-    if (role === 'listener') {
+      this.state.acceptWebSocket(server, ['emitter']);
+
+    } else {
+      // --- LISTENER ---
+      this.state.acceptWebSocket(server, ['listener']);
+
+      // Send the current stored value immediately on connect.
       const currentValue = (await this.state.storage.get<string>('value')) ?? '';
       server.send(currentValue);
     }
@@ -49,26 +61,37 @@ export class StringStateRoom {
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  // Called by the runtime for every message received on any accepted WebSocket
+  // Handles all incoming messages from accepted WebSockets.
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
     const role = this.state.getTags(ws)[0];
-
     if (role !== 'emitter') return;
 
     const newString = typeof message === 'string' ? message : '';
 
-    // 1. Persist to SQLite
+    // 1. Persist to SQLite.
     await this.state.storage.put('value', newString);
 
-    // 2. Broadcast to all listeners
-    this.state.getWebSockets('listener').forEach((sock) => {
-      sock.send(newString);
-    });
+    // 2. Broadcast to all listeners.
+    this.state.getWebSockets('listener').forEach((sock) => sock.send(newString));
 
     console.log(`[DO] Saved & broadcasted: "${newString}"`);
   }
 
+  // Called when any accepted WebSocket closes — releases the emitter lock automatically.
   async webSocketClose(ws: WebSocket, code: number, reason: string) {
+    const role = this.state.getTags(ws)[0];
+    if (role === 'emitter') {
+      console.log('[DO] Host disconnected — lock released.');
+    }
     ws.close(code, reason);
+  }
+
+  // Also release on error so a crashed tab doesn't permanently hold the lock.
+  async webSocketError(ws: WebSocket) {
+    const role = this.state.getTags(ws)[0];
+    if (role === 'emitter') {
+      console.log('[DO] Host errored — lock released.');
+    }
+    ws.close(1011, 'WebSocket error.');
   }
 }
