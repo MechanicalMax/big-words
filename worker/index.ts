@@ -50,6 +50,9 @@ export class StringStateRoom {
       this.state.acceptWebSocket(server, ['emitter']);
       // Confirm to the emitter that they now hold the lock.
       send(server, { type: 'status', emitterActive: true });
+      // Notify all existing listeners that a host is now live.
+      const hostJoined: ServerMessage = { type: 'status', emitterActive: true };
+      this.state.getWebSockets('listener').forEach((sock) => send(sock, hostJoined));
 
     } else {
       // --- LISTENER ---
