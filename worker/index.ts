@@ -84,6 +84,7 @@ export class StringStateRoom {
       console.log('[DO] Host disconnected — lock released.');
     }
     ws.close(code, reason);
+    await this.teardownIfEmpty();
   }
 
   // Also release on error so a crashed tab doesn't permanently hold the lock.
@@ -93,5 +94,14 @@ export class StringStateRoom {
       console.log('[DO] Host errored — lock released.');
     }
     ws.close(1011, 'WebSocket error.');
+    await this.teardownIfEmpty();
+  }
+
+  // Wipe storage when the last connection drops — keeps SQLite footprint at zero.
+  private async teardownIfEmpty() {
+    if (this.state.getWebSockets().length === 0) {
+      await this.state.storage.deleteAll();
+      console.log('[DO] All connections closed — storage wiped.');
+    }
   }
 }
