@@ -1,3 +1,5 @@
+import { send, parse, type ServerMessage, type ClientMessage } from '../src/protocol';
+
 export interface Env {
   STRING_STATE_ROOM: DurableObjectNamespace;
 }
@@ -38,67 +40,68 @@ export class StringStateRoom {
 
     if (url.pathname.startsWith('/emit/')) {
       // --- LOCK CHECK ---
-      // getWebSockets('emitter') survives hibernation; no in-memory state needed.
-      const existingEmitters = this.state.getWebSockets('emitter');
-      if (existingEmitters.length > 0) {
-        // Reject the newcomer — a host is already active.
+      if (this.state.getWebSockets('emitter').length > 0) {
         server.accept();
-        server.close(4000, 'Room already has an active host.');
+        send(server, { type: 'error', message: 'Session in use' });
+        server.close(4000, 'Session in use');
         return new Response(null, { status: 101, webSocket: client });
       }
 
       this.state.acceptWebSocket(server, ['emitter']);
+      // Confirm to the emitter that they now hold the lock.
+      send(server, { type: 'status', emitterActive: true });
 
     } else {
       // --- LISTENER ---
       this.state.acceptWebSocket(server, ['listener']);
 
-      // Send the current stored value immediately on connect.
-      const currentValue = (await this.state.storage.get<string>('value')) ?? '';
-      server.send(currentValue);
+      // Send current value + emitter presence immediately on connect.
+      const currentValue    = (await this.state.storage.get<string>('value')) ?? '';
+      const emitterActive   = this.state.getWebSockets('emitter').length > 0;
+      send(server, { type: 'data',   value: currentValue });
+      send(server, { type: 'status', emitterActive });
     }
 
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  // Handles all incoming messages from accepted WebSockets.
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
     const role = this.state.getTags(ws)[0];
     if (role !== 'emitter') return;
 
-    const newString = typeof message === 'string' ? message : '';
+    const msg = parse<ClientMessage>(message);
+    if (!msg || msg.type !== 'data') return;
 
     // 1. Persist to SQLite.
-    await this.state.storage.put('value', newString);
+    await this.state.storage.put('value', msg.value);
 
     // 2. Broadcast to all listeners.
-    this.state.getWebSockets('listener').forEach((sock) => sock.send(newString));
+    const payload: ServerMessage = { type: 'data', value: msg.value };
+    this.state.getWebSockets('listener').forEach((sock) => send(sock, payload));
 
-    console.log(`[DO] Saved & broadcasted: "${newString}"`);
+    console.log(`[DO] Saved & broadcasted: "${msg.value}"`);
   }
 
-  // Called when any accepted WebSocket closes — releases the emitter lock automatically.
   async webSocketClose(ws: WebSocket, code: number, reason: string) {
+    ws.close(code, reason);
+    await this.notifyAndTeardown(ws);
+  }
+
+  async webSocketError(ws: WebSocket) {
+    ws.close(1011, 'WebSocket error.');
+    await this.notifyAndTeardown(ws);
+  }
+
+  private async notifyAndTeardown(ws: WebSocket) {
     const role = this.state.getTags(ws)[0];
+
     if (role === 'emitter') {
       console.log('[DO] Host disconnected — lock released.');
+      // Tell all listeners the host is gone.
+      const payload: ServerMessage = { type: 'status', emitterActive: false };
+      this.state.getWebSockets('listener').forEach((sock) => send(sock, payload));
     }
-    ws.close(code, reason);
-    await this.teardownIfEmpty();
-  }
 
-  // Also release on error so a crashed tab doesn't permanently hold the lock.
-  async webSocketError(ws: WebSocket) {
-    const role = this.state.getTags(ws)[0];
-    if (role === 'emitter') {
-      console.log('[DO] Host errored — lock released.');
-    }
-    ws.close(1011, 'WebSocket error.');
-    await this.teardownIfEmpty();
-  }
-
-  // Wipe storage when the last connection drops — keeps SQLite footprint at zero.
-  private async teardownIfEmpty() {
     if (this.state.getWebSockets().length === 0) {
       await this.state.storage.deleteAll();
       console.log('[DO] All connections closed — storage wiped.');
