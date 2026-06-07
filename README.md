@@ -16,6 +16,7 @@ A minimal, full-screen text display tool. Type anything and it fills your entire
 - **Shareable URLs** — message and theme are encoded in the URL automatically
 - **PWA** — installable on desktop and mobile for offline use
 - **Accessible** — screen reader support via ARIA live regions and canvas labels
+- **Live sync** — a host can broadcast text in real time to any number of viewers via Cloudflare Durable Objects
 
 ## 🚀 Getting Started
 
@@ -69,26 +70,69 @@ Type a theme name and it switches instantly — the text clears automatically. T
 
 These are intentionally undocumented in the app — consider them easter eggs.
 
+## 📡 Live Sync
+
+Big Words includes a real-time broadcasting feature backed by Cloudflare Durable Objects and WebSockets. A host types on one device and every viewer sees it instantly.
+
+### How it works
+
+Each session is identified by a **room ID**. The Durable Object for that room holds a single string in SQLite storage and manages all connected WebSocket clients.
+
+| Route | Role |
+|---|---|
+| `/emit/[id]` | Host — claims the room lock and broadcasts keystrokes |
+| `/listen/[id]` | Viewer — receives the current value on connect, then live updates |
+
+**Lock behaviour:**
+- Only one host can hold a room at a time.
+- A second client hitting `/emit/[id]` is rejected and redirected to the corresponding `/listen/[id]` route automatically.
+- When the host disconnects, all viewers receive a `status` message (`emitterActive: false`) and a "Become Host" button appears so anyone can race to claim the now-free room.
+- When the last connection drops, storage is wiped back to zero.
+
+### Message contract
+
+All WebSocket messages are JSON.
+
+| Direction | Payload | Meaning |
+|---|---|---|
+| Server → client | `{ type: "data", value: "..." }` | Current string value |
+| Server → client | `{ type: "status", emitterActive: bool }` | Host presence changed |
+| Server → client | `{ type: "error", message: "..." }` | Connection rejected |
+| Client → server | `{ type: "data", value: "..." }` | New string from host |
+
+### Test pages
+
+During development, two minimal HTML pages are available for testing the pipeline end-to-end:
+
+- `/emitter-test.html?room=<id>` — host UI
+- `/listener.html?room=<id>` — viewer UI
+
 ## 🏗️ Deployment
 
-This project is deployed via [Cloudflare Pages](https://pages.cloudflare.com/). Pushes to `main` trigger an automatic build and deploy.
+This project runs on [Cloudflare Workers](https://workers.cloudflare.com/) with static assets served via the Workers Assets binding. Pushes to `main` trigger an automatic build and deploy.
 
 To deploy your own fork:
-1. Go to Cloudflare Pages → Create a project → Connect to Git
-2. Select your repo
-3. Set the build command to `npm run build` and output directory to `dist`
-4. Add your custom domain in the Pages project settings
 
-To build locally:
+1. Install [Wrangler](https://developers.cloudflare.com/workers/wrangler/):
+```bash
+npm install -g wrangler
+wrangler login
+```
+
+2. Deploy:
+```bash
+npm run deploy
+```
+
+To build locally without deploying:
 ```bash
 npm run build
 ```
 
 ## 🗺️ Roadmap
 
-Core features done!
-
 - **More themes** — additional magic words
+- **Named rooms** — shareable URLs that drop viewers directly into a live session
 
 ## 🤝 Contributing
 
