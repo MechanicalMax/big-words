@@ -2,6 +2,7 @@ import { send, parse, type ServerMessage, type ClientMessage } from '../src/prot
 
 export interface Env {
   STRING_STATE_ROOM: DurableObjectNamespace;
+  ASSETS: Fetcher;
 }
 
 // --- ROUTER (Front Door) ---
@@ -11,6 +12,12 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname.startsWith('/emit/') || url.pathname.startsWith('/listen/')) {
+      // Only intercept WebSocket upgrades — let plain GET requests fall through
+      // to the asset handler so listen.html and emit.html are served correctly.
+      if (request.headers.get('Upgrade') !== 'websocket') {
+        return env.ASSETS.fetch(request);
+      }
+
       const roomId = url.pathname.split('/')[2];
       const id     = env.STRING_STATE_ROOM.idFromName(roomId);
       const stub   = env.STRING_STATE_ROOM.get(id);
