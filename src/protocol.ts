@@ -1,14 +1,16 @@
 // Shared WebSocket message contract used by both the worker and frontends.
 
+// Server → client
 export type ServerMessage =
-  | { type: 'data';   value: string }
-  | { type: 'status'; emitterActive: boolean }
-  | { type: 'error';  message: string };
+  | { type: 'data';   text: string; theme: string }   // room state (initial or live update)
+  | { type: 'role';   role: 'host' | 'viewer' }       // role assigned on connect
+  | { type: 'status'; hostActive: false };             // host has disconnected
 
+// Client → server (host only)
 export type ClientMessage =
-  | { type: 'data'; value: string };
+  | { type: 'data'; text: string; theme: string };
 
-export const send = (ws: WebSocket, msg: ServerMessage | ClientMessage) =>
+export const send = (ws: WebSocket, msg: ServerMessage | ClientMessage): void =>
   ws.send(JSON.stringify(msg));
 
 export const parse = <T>(raw: string | ArrayBuffer): T | null => {
