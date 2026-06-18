@@ -8,7 +8,7 @@
   "assets": {
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/emit/*", "/listen/*"]
+    "run_worker_first": ["/room/*"]
   },
   "compatibility_flags": [
     "nodejs_compat"
@@ -16,15 +16,15 @@
   "durable_objects": {
     "bindings": [
       {
-        "name": "STRING_STATE_ROOM",
-        "class_name": "StringStateRoom"
+        "name": "ROOM",
+        "class_name": "Room"
       }
     ]
   },
   "migrations": [
     {
       "tag": "v1",
-      "new_sqlite_classes": ["StringStateRoom"]
+      "new_sqlite_classes": ["Room"]
     }
   ]
 }
