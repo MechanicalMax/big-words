@@ -11,10 +11,11 @@ export function updateURL(): void {
     params.set('room', roomState.roomId);
   } else {
     // Solo mode — track text and theme.
-    params.set('m', state.text);
-    if (themeState.name !== 'black') {
-      params.set('t', themeState.name);
-    }
+    if (state.text) params.set('m', state.text);
+    if (themeState.name !== 'black') params.set('t', themeState.name);
+    // If both are defaults, push a clean "/" with no params.
+    history.replaceState(null, '', params.toString() ? '?' + params.toString() : '/');
+    return;
   }
 
   history.replaceState(null, '', '?' + params.toString());

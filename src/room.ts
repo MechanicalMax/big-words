@@ -25,7 +25,7 @@ export function joinRoom(roomId: string): void {
   updateURL(); // sets ?room=[id], drops ?m= and ?t=
 
   ws.onopen = () => {
-    roomState.connected = true;
+    // Don't mark connected yet — wait for the role assignment from the server.
   };
 
   ws.onmessage = (event) => {
@@ -33,7 +33,8 @@ export function joinRoom(roomId: string): void {
     if (!msg) return;
 
     if (msg.type === 'role') {
-      roomState.role = msg.role;
+      roomState.role      = msg.role;
+      roomState.connected = true; // role is known — connection is fully ready
       announce(msg.role === 'host' ? 'You are the host' : 'Joined as viewer');
     }
 

@@ -45,9 +45,12 @@ window.addEventListener('keydown', (e) => {
   // Let HUD handle its own keys.
   if (isHUDOpen()) return;
 
-  // Viewers: request fullscreen on any keystroke, then stop.
+  // Viewers: request fullscreen on any keystroke.
+  // Allow "/" to fall through to the input so the HUD can open.
+  // Block everything else from reaching the input via preventDefault.
   if (roomState.role === 'viewer' && roomState.connected) {
     if (!isMobile()) requestFullscreen();
+    if (e.key !== '/') e.preventDefault();
     return;
   }
 
@@ -79,18 +82,20 @@ window.addEventListener('keydown', (e) => {
 // --- INPUT EVENT ---
 
 input.addEventListener('input', () => {
-  // Viewers ignore canvas input.
-  if (roomState.role === 'viewer' && roomState.connected) {
-    input.value = state.text; // reset any stray input
-    return;
-  }
-
   const newValue = input.value;
 
   // Open HUD when "/" is the only character on a blank screen.
+  // Available to all roles — viewers need this to access /exit.
   if (newValue === '/' && state.text === '') {
     input.value = '';
     openHUD();
+    return;
+  }
+
+  // Viewers ignore all other canvas input — but preserve "/" so
+  // the HUD check above always gets a chance to run first.
+  if (roomState.role === 'viewer' && roomState.connected) {
+    if (newValue !== '/') input.value = '';
     return;
   }
 
