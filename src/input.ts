@@ -85,8 +85,8 @@ input.addEventListener('input', () => {
   const newValue = input.value;
 
   // Open HUD when "/" is the only character on a blank screen.
-  // Available to all roles — viewers need this to access /exit.
-  if (newValue === '/' && state.text === '') {
+  // Available to all roles — viewers need this regardless of state.text to access /exit.
+  if (newValue === '/' && (state.text === '' || roomState.role === 'viewer')) {
     input.value = '';
     openHUD();
     return;
