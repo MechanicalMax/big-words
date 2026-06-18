@@ -16,7 +16,7 @@ export function executeCommand(result: ParseCommandResult): void {
 
   switch (command.cmd) {
     case 'theme':
-      if (roomState.role === 'viewer') {
+      if (roomState.connected && roomState.role === 'viewer') {
         alert('Viewers cannot change the theme. Only the host can.');
         return;
       }

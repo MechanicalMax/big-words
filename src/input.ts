@@ -44,8 +44,12 @@ input.addEventListener('blur', () => {
 window.addEventListener('keydown', (e) => {
   // Let HUD handle its own keys.
   if (isHUDOpen()) return;
-  // Viewers ignore all canvas input.
-  if (roomState.role === 'viewer' && roomState.connected) return;
+
+  // Viewers: request fullscreen on any keystroke, then stop.
+  if (roomState.role === 'viewer' && roomState.connected) {
+    if (!isMobile()) requestFullscreen();
+    return;
+  }
 
   if (e.metaKey || e.ctrlKey || e.altKey) return;
 

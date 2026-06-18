@@ -1,4 +1,5 @@
 import { parseCommand } from './protocol';
+import { keepFocused } from './input.js';
 
 const hudEl    = document.getElementById('hud')    as HTMLDivElement;
 const hudInput = document.getElementById('hud-input') as HTMLInputElement;
@@ -24,6 +25,7 @@ export function openHUD(): void {
 export function closeHUD(): void {
   hudEl.hidden   = true;
   hudInput.value = '';
+  keepFocused();
 }
 
 // --- INPUT HANDLING ---
@@ -51,9 +53,8 @@ hudInput.addEventListener('keydown', (e) => {
   }
 });
 
-// Prevent the slash from being eaten if the HUD opens mid-keydown.
+// If the user somehow clears the leading "/", close gracefully.
 hudInput.addEventListener('input', () => {
-  // Keep the leading "/" — if the user somehow deletes it, close gracefully.
   if (!hudInput.value.startsWith('/')) {
     closeHUD();
   }
