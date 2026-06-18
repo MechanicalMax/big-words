@@ -1,4 +1,4 @@
-import { send, parse, type ServerMessage, type ClientMessage } from '../src/protocol';
+import { send, validateClientMessage, isValidTheme, type ServerMessage, type Theme } from '../src/protocol';
 
 export interface Env {
   ROOM: DurableObjectNamespace;
@@ -46,8 +46,9 @@ export class Room {
     send(server, { type: 'role', role });
 
     // Send current room state.
-    const text  = (await this.state.storage.get<string>('text'))  ?? '';
-    const theme = (await this.state.storage.get<string>('theme')) ?? 'black';
+    const text       = (await this.state.storage.get<string>('text'))  ?? '';
+    const storedTheme = await this.state.storage.get<string>('theme');
+    const theme: Theme = isValidTheme(storedTheme) ? storedTheme : 'black';
     send(server, { type: 'data', text, theme });
 
     return new Response(null, { status: 101, webSocket: client });
@@ -57,8 +58,8 @@ export class Room {
     // Only the host can push state.
     if (this.state.getTags(ws)[0] !== 'host') return;
 
-    const msg = parse<ClientMessage>(message);
-    if (!msg || msg.type !== 'data') return;
+    const msg = validateClientMessage(message);
+    if (!msg) return;
 
     // Persist both fields.
     await this.state.storage.put('text',  msg.text);
