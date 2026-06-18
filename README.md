@@ -12,11 +12,12 @@ A minimal, full-screen text display tool. Type anything and it fills your entire
 - **High-DPI support** — crisp rendering on Retina and other high-density displays
 - **Auto fullscreen** — enters fullscreen on first interaction on desktop, no button needed
 - **Mobile support** — tap anywhere to bring up the native keyboard on touch devices
-- **Color themes** — three built-in themes, triggered by typing their name
+- **Color themes** — three built-in themes, switchable via `/theme [name]`
 - **Shareable URLs** — message and theme are encoded in the URL automatically
 - **PWA** — installable on desktop and mobile for offline use
 - **Accessible** — screen reader support via ARIA live regions and canvas labels
-- **Live sync** — a host can broadcast text in real time to any number of viewers via Cloudflare Durable Objects
+- **Live sync** — join a shared room with `/room [id]` to broadcast text and theme in real time to any number of viewers via Cloudflare Durable Objects
+- **Command system** — type `/` on a blank screen to open the command HUD
 
 ## 🚀 Getting Started
 
@@ -44,11 +45,13 @@ npm run dev
 
 **Mobile:** tap anywhere to open the native keyboard. Tap "Done" to dismiss it.
 
-| Key | Action |
+| Key / Input | Action |
 |---|---|
-| Any key | Adds a character to the display |
+| Any printable key | Adds a character to the display |
 | `Backspace` | Removes the last character |
-| `Enter` | Clears the screen |
+| `Enter` | Executes a `/command` if the HUD is open, otherwise clears the screen |
+| `/` on a blank screen | Opens the command HUD |
+| `Escape` or `Backspace` to empty | Closes the command HUD without executing |
 
 ## 🔗 Sharing
 
@@ -57,37 +60,69 @@ The URL updates automatically as you type — just copy and share it. The recipi
 Examples:
 - `bigwords.maximusshurr.com/?m=Hello`
 - `bigwords.maximusshurr.com/?m=Hello&t=white`
+- `bigwords.maximusshurr.com/?room=my-room` — joins a live sync room directly
+
+When in a room, `?m=` and `?t=` are dropped — the URL is just `/?room=[id]`. Text and theme are owned by the room.
 
 ## 🎨 Themes
 
-Type a theme name and it switches instantly — the text clears automatically. Typing the name of the theme you're already on does nothing (no accidental clears).
+Use `/theme [name]` to switch themes. Outside of a room, the active theme is saved in the URL so shared links preserve it. Inside a room, the host's theme is broadcast to all viewers.
 
-| Word | Theme |
+| Name | Theme |
 |---|---|
 | `black` | White text on black (default) |
 | `white` | Black text on white |
 | `rainbow` | Complementary cycling colors on both text and background |
 
-These are intentionally undocumented in the app — consider them easter eggs.
+> Theme switching is command-only. Typing `rainbow` just displays the word.
+
+## ⌨️ Commands
+
+Typing `/` when the screen is blank opens the **command HUD** — a full-screen overlay with a command input at the top and a scrollable reference list of all available commands below it.
+
+Press **Enter** to execute, **Escape** or **Backspace** (back to empty) to dismiss without executing.
+
+| Command | Action |
+|---|---|
+| `/theme [name]` | Switch to the named theme (`black`, `white`, `rainbow`) |
+| `/room [id]` | Join a live sync room with the given ID |
+| `/exit` | Leave the current room and return to solo mode |
+
+The HUD is available in all app states — solo mode, host, and viewer — so a viewer can open the HUD and type `/exit` to leave a room even though their main canvas keypresses are otherwise ignored.
 
 ## 📡 Live Sync
 
-Big Words includes a real-time broadcasting feature backed by Cloudflare Durable Objects and WebSockets. A host types on one device and every viewer sees it instantly.
+Big Words includes a real-time broadcasting feature backed by Cloudflare Durable Objects and WebSockets. A host types on one device and every viewer sees the same text and theme instantly.
 
 ### How it works
 
-Each session is identified by a **room ID**. The Durable Object for that room holds a single string in SQLite storage and manages all connected WebSocket clients.
+Everything runs through the single-page app at `/`. There are no separate routes for hosts or viewers.
 
-| Route | Role |
-|---|---|
-| `/emit/[id]` | Host — claims the room lock and broadcasts keystrokes |
-| `/listen/[id]` | Viewer — receives the current value on connect, then live updates |
+Joining a room is done with the `/room [id]` command or by navigating directly to `/?room=[id]`. The URL becomes `/?room=[id]` when you join and returns to `/` when you exit.
 
-**Lock behaviour:**
-- Only one host can hold a room at a time.
-- A second client hitting `/emit/[id]` is rejected and redirected to the corresponding `/listen/[id]` route automatically.
-- When the host disconnects, all viewers receive a `status` message (`emitterActive: false`) and a "Become Host" button appears so anyone can race to claim the now-free room.
+Each room is identified by its **room ID**. The Durable Object for that room stores the current text and theme in SQLite and manages all connected WebSocket clients.
+
+**Role assignment:**
+- The first WebSocket connection to a room becomes the **host** and can type freely. Their text and theme changes are broadcast to all viewers in real time.
+- All subsequent connections join as **viewers**. They receive the current text and theme immediately on connect, then receive live updates. Viewer keypresses on the main canvas are ignored, but the command HUD remains available.
+- Fullscreen requests still trigger on any interaction for viewers, same as solo mode.
+
+**Host handoff:**
+- When the host disconnects, all viewers immediately receive a notification and are prompted (via `alert()`) to refresh the page to try to become the new host.
+- The first client to reconnect to the room claims the host role.
 - When the last connection drops, storage is wiped back to zero.
+
+**Exiting a room:**
+- Running `/exit` closes the WebSocket, clears the URL back to `/`, and navigates to the home route — returning the app to its default `"Type!"` state in solo mode.
+
+### WebSocket connection
+
+The SPA is served as a standard static asset. The worker intercepts only WebSocket upgrade requests at a single endpoint.
+
+| Route | Description |
+|---|---|
+| `GET /` (HTTP) | Serves the SPA |
+| `GET /room/[id]` (WebSocket upgrade only) | Connects the client to the Durable Object for that room |
 
 ### Message contract
 
@@ -95,17 +130,10 @@ All WebSocket messages are JSON.
 
 | Direction | Payload | Meaning |
 |---|---|---|
-| Server → client | `{ type: "data", value: "..." }` | Current string value |
-| Server → client | `{ type: "status", emitterActive: bool }` | Host presence changed |
-| Server → client | `{ type: "error", message: "..." }` | Connection rejected |
-| Client → server | `{ type: "data", value: "..." }` | New string from host |
-
-### Test pages
-
-During development, two minimal HTML pages are available for testing the pipeline end-to-end:
-
-- `/emitter-test.html?room=<id>` — host UI
-- `/listener.html?room=<id>` — viewer UI
+| Server → client | `{ type: "data", text: "...", theme: "..." }` | Room state — sent on connect and on every host update |
+| Server → client | `{ type: "role", role: "host"\|"viewer" }` | Role assigned on connect |
+| Server → client | `{ type: "status", hostActive: false }` | Host has disconnected |
+| Client → server | `{ type: "data", text: "...", theme: "..." }` | New state from host |
 
 ## 🏗️ Deployment
 
@@ -131,8 +159,7 @@ npm run build
 
 ## 🗺️ Roadmap
 
-- **More themes** — additional magic words
-- **Named rooms** — shareable URLs that drop viewers directly into a live session
+- **More themes** — additional `/theme` options
 
 ## 🤝 Contributing
 
