@@ -49,13 +49,14 @@ npm run dev
 |---|---|
 | Any printable key | Adds a character to the display |
 | `Backspace` | Removes the last character |
-| `Enter` | Executes a `/command` if the HUD is open, otherwise clears the screen |
+| `Enter` | Clears the screen |
 | `/` on a blank screen | Opens the command HUD |
 | `Escape` or `Backspace` to empty | Closes the command HUD without executing |
+| `Enter` in HUD | Executes the typed command |
 
 ## 🔗 Sharing
 
-The URL updates automatically as you type — just copy and share it. The recipient lands on the same message and theme, no setup needed. The default black theme is omitted from the URL to keep links clean.
+The URL updates automatically as you type — just copy and share it. The recipient lands on the same message and theme, no setup needed. The default black theme and empty text are omitted from the URL to keep links clean.
 
 Examples:
 - `bigwords.maximusshurr.com/?m=Hello`
@@ -66,7 +67,7 @@ When in a room, `?m=` and `?t=` are dropped — the URL is just `/?room=[id]`. T
 
 ## 🎨 Themes
 
-Use `/theme [name]` to switch themes. Outside of a room, the active theme is saved in the URL so shared links preserve it. Inside a room, the host's theme is broadcast to all viewers.
+Use `/theme [name]` to switch themes. Outside of a room, the active theme is saved in the URL so shared links preserve it. Inside a room, the host's theme is broadcast to all viewers instantly.
 
 | Name | Theme |
 |---|---|
@@ -88,7 +89,7 @@ Press **Enter** to execute, **Escape** or **Backspace** (back to empty) to dismi
 | `/room [id]` | Join a live sync room with the given ID |
 | `/exit` | Leave the current room and return to solo mode |
 
-The HUD is available in all app states — solo mode, host, and viewer — so a viewer can open the HUD and type `/exit` to leave a room even though their main canvas keypresses are otherwise ignored.
+The HUD is available in all app states — solo mode, host, and viewer. A viewer's canvas keypresses are blocked, but `/` always reaches the hidden input and opens the HUD, so they can always type `/exit` to leave.
 
 ## 📡 Live Sync
 
@@ -104,16 +105,16 @@ Each room is identified by its **room ID**. The Durable Object for that room sto
 
 **Role assignment:**
 - The first WebSocket connection to a room becomes the **host** and can type freely. Their text and theme changes are broadcast to all viewers in real time.
-- All subsequent connections join as **viewers**. They receive the current text and theme immediately on connect, then receive live updates. Viewer keypresses on the main canvas are ignored, but the command HUD remains available.
-- Fullscreen requests still trigger on any interaction for viewers, same as solo mode.
+- All subsequent connections join as **viewers**. They receive the current text and theme immediately on connect, then receive live updates. Viewer canvas keypresses are blocked, but fullscreen is still requested on any key or tap, and the command HUD is always accessible via `/`.
+- The client only transitions to `connected` state after receiving its role message from the server — there is no window where role is unknown but input is processed.
 
 **Host handoff:**
-- When the host disconnects, all viewers immediately receive a notification and are prompted (via `alert()`) to refresh the page to try to become the new host.
+- When the host disconnects, all viewers are immediately notified via `alert()` and prompted to refresh the page.
 - The first client to reconnect to the room claims the host role.
-- When the last connection drops, storage is wiped back to zero.
+- When the last connection drops, room storage is wiped back to zero.
 
 **Exiting a room:**
-- Running `/exit` closes the WebSocket, clears the URL back to `/`, and navigates to the home route — returning the app to its default `"Type!"` state in solo mode.
+- Running `/exit` closes the WebSocket, clears the URL back to `/`, and navigates home — returning the app to a blank screen in solo mode.
 
 ### WebSocket connection
 
@@ -134,6 +135,32 @@ All WebSocket messages are JSON.
 | Server → client | `{ type: "role", role: "host"\|"viewer" }` | Role assigned on connect |
 | Server → client | `{ type: "status", hostActive: false }` | Host has disconnected |
 | Client → server | `{ type: "data", text: "...", theme: "..." }` | New state from host |
+
+## 🏗️ Architecture
+
+The codebase is a single-page Vite app with a Cloudflare Worker backend. All source is TypeScript except for the canvas renderer and announcer which remain plain JS.
+
+```
+src/
+  protocol.ts     — shared message types, theme constants, command parser, wire helpers
+  themes.ts       — theme registry and applyTheme(); imports Theme type from protocol.ts
+  state.js        — shared mutable { text } object
+  renderer.js     — canvas scaling and paint
+  announcer.js    — debounced screen reader announcements
+  input.ts        — keyboard capture, focus/fullscreen, HUD trigger, viewer gating
+  hud.ts          — command HUD overlay, focus management, keydown handling
+  commands.ts     — command executor, bridges HUD output to app actions
+  room.ts         — WebSocket lifecycle, role state, broadcast, join/leave
+  url.ts          — URL read/write, room-aware param handling
+  app.ts          — app entry point, init sequence, URL-based auto-join
+
+worker/
+  index.ts        — Cloudflare Worker router + Room Durable Object
+```
+
+**Source of truth for themes:** `VALID_THEMES` in `protocol.ts` defines the valid set. `themes.ts` imports it and uses `Record<Theme, ThemeConfig>` so TypeScript errors at compile time if a theme is added to one without the other. The worker uses `isValidTheme()` from `protocol.ts` to validate all inbound host messages and storage reads before broadcasting.
+
+**Adding a new theme:** add the name to `VALID_THEMES` in `protocol.ts`, add the config entry to `THEMES` in `themes.ts`. TypeScript will surface any mismatch.
 
 ## 🏗️ Deployment
 
