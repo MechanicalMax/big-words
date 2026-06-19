@@ -61,7 +61,7 @@ window.addEventListener('keydown', (e) => {
     state.text  = '';
     input.value = '';
     render();
-    updateURL();
+    updateURL(roomState.roomId || null);
     announce('Cleared');
     broadcast();
     return;
@@ -72,7 +72,7 @@ window.addEventListener('keydown', (e) => {
     state.text  = state.text.slice(0, -1);
     input.value = state.text;
     render();
-    updateURL();
+    updateURL(roomState.roomId || null);
     announce(state.text || 'Cleared');
     broadcast();
     return;
@@ -106,7 +106,7 @@ input.addEventListener('input', () => {
   }
 
   render();
-  updateURL();
+  updateURL(roomState.roomId || null);
   announce(state.text);
   broadcast();
 });
