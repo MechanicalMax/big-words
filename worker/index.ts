@@ -1,120 +1,97 @@
-import { send, parse, type ServerMessage, type ClientMessage } from '../src/protocol';
+import { send, validateClientMessage, isValidTheme, type ServerMessage, type Theme } from '../src/protocol';
 
 export interface Env {
-  STRING_STATE_ROOM: DurableObjectNamespace;
+  ROOM: DurableObjectNamespace;
   ASSETS: Fetcher;
 }
 
-// --- ROUTER (Front Door) ---
+// --- ROUTER ---
 
 export default {
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url);
 
-    if (url.pathname.startsWith('/emit/') || url.pathname.startsWith('/listen/')) {
-      // Only intercept WebSocket upgrades — let plain GET requests fall through
-      // to the asset handler so listen.html and emit.html are served correctly.
-      if (request.headers.get('Upgrade') !== 'websocket') {
-        return env.ASSETS.fetch(request);
-      }
-
-      const roomId = url.pathname.split('/')[2];
-      const id     = env.STRING_STATE_ROOM.idFromName(roomId);
-      const stub   = env.STRING_STATE_ROOM.get(id);
+    // Intercept WebSocket upgrades to /room/[id] — everything else is the SPA.
+    if (url.pathname.startsWith('/room/') && request.headers.get('Upgrade') === 'websocket') {
+      const roomId = url.pathname.slice(6); // strip "/room/"
+      const stub   = env.ROOM.get(env.ROOM.idFromName(roomId));
       return stub.fetch(request);
     }
 
-    return new Response('Not found', { status: 404 });
+    return env.ASSETS.fetch(request);
   },
 };
 
-// --- DURABLE OBJECT (State Manager) ---
+// --- DURABLE OBJECT ---
 
-export class StringStateRoom {
-  state: DurableObjectState;
+export class Room {
+  private state: DurableObjectState;
 
   constructor(state: DurableObjectState) {
     this.state = state;
   }
 
-  async fetch(request: Request) {
+  async fetch(request: Request): Promise<Response> {
     if (request.headers.get('Upgrade') !== 'websocket') {
-      return new Response('Expected WebSocket upgrade', { status: 400 });
+      return new Response('Expected WebSocket upgrade', { status: 426 });
     }
 
-    const url = new URL(request.url);
     const { 0: client, 1: server } = new WebSocketPair();
+    const isHost = this.state.getWebSockets('host').length === 0;
+    const role   = isHost ? 'host' : 'viewer';
 
-    if (url.pathname.startsWith('/emit/')) {
-      // --- LOCK CHECK ---
-      if (this.state.getWebSockets('emitter').length > 0) {
-        server.accept();
-        send(server, { type: 'error', message: 'Session in use' });
-        server.close(4000, 'Session in use');
-        return new Response(null, { status: 101, webSocket: client });
-      }
+    this.state.acceptWebSocket(server, [role]);
 
-      this.state.acceptWebSocket(server, ['emitter']);
-      // Confirm to the emitter that they now hold the lock.
-      send(server, { type: 'status', emitterActive: true });
-      // Notify all existing listeners that a host is now live.
-      const hostJoined: ServerMessage = { type: 'status', emitterActive: true };
-      this.state.getWebSockets('listener').forEach((sock) => send(sock, hostJoined));
+    // Send role assignment.
+    send(server, { type: 'role', role });
 
-    } else {
-      // --- LISTENER ---
-      this.state.acceptWebSocket(server, ['listener']);
-
-      // Send current value + emitter presence immediately on connect.
-      const currentValue    = (await this.state.storage.get<string>('value')) ?? '';
-      const emitterActive   = this.state.getWebSockets('emitter').length > 0;
-      send(server, { type: 'data',   value: currentValue });
-      send(server, { type: 'status', emitterActive });
-    }
+    // Send current room state.
+    const text       = (await this.state.storage.get<string>('text'))  ?? '';
+    const storedTheme = await this.state.storage.get<string>('theme');
+    const theme: Theme = isValidTheme(storedTheme) ? storedTheme : 'black';
+    send(server, { type: 'data', text, theme });
 
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
-    const role = this.state.getTags(ws)[0];
-    if (role !== 'emitter') return;
+  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    // Only the host can push state.
+    if (this.state.getTags(ws)[0] !== 'host') return;
 
-    const msg = parse<ClientMessage>(message);
-    if (!msg || msg.type !== 'data') return;
+    const msg = validateClientMessage(message);
+    if (!msg) return;
 
-    // 1. Persist to SQLite.
-    await this.state.storage.put('value', msg.value);
+    // Persist both fields.
+    await this.state.storage.put('text',  msg.text);
+    await this.state.storage.put('theme', msg.theme);
 
-    // 2. Broadcast to all listeners.
-    const payload: ServerMessage = { type: 'data', value: msg.value };
-    this.state.getWebSockets('listener').forEach((sock) => send(sock, payload));
-
-    console.log(`[DO] Saved & broadcasted: "${msg.value}"`);
+    // Broadcast to all viewers.
+    const payload: ServerMessage = { type: 'data', text: msg.text, theme: msg.theme };
+    this.state.getWebSockets('viewer').forEach((sock) => send(sock, payload));
   }
 
-  async webSocketClose(ws: WebSocket, code: number, reason: string) {
+  async webSocketClose(ws: WebSocket, code: number, reason: string): Promise<void> {
     ws.close(code, reason);
-    await this.notifyAndTeardown(ws);
+    await this.teardown(ws);
   }
 
-  async webSocketError(ws: WebSocket) {
+  async webSocketError(ws: WebSocket): Promise<void> {
     ws.close(1011, 'WebSocket error.');
-    await this.notifyAndTeardown(ws);
+    await this.teardown(ws);
   }
 
-  private async notifyAndTeardown(ws: WebSocket) {
+  private async teardown(ws: WebSocket): Promise<void> {
     const role = this.state.getTags(ws)[0];
 
-    if (role === 'emitter') {
-      console.log('[DO] Host disconnected — lock released.');
-      // Tell all listeners the host is gone.
-      const payload: ServerMessage = { type: 'status', emitterActive: false };
-      this.state.getWebSockets('listener').forEach((sock) => send(sock, payload));
+    if (role === 'host') {
+      // Notify all viewers that the host has left.
+      const payload: ServerMessage = { type: 'status', hostActive: false };
+      this.state.getWebSockets('viewer').forEach((sock) => send(sock, payload));
     }
 
+    // Wipe storage when the room is empty.
     if (this.state.getWebSockets().length === 0) {
       await this.state.storage.deleteAll();
-      console.log('[DO] All connections closed — storage wiped.');
     }
   }
 }

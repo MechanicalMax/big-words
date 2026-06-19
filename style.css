@@ -46,8 +46,97 @@ canvas {
   border: none;
   padding: 0;
   margin: 0;
-  pointer-events: none; /* clicks pass through to canvas; we focus it programmatically */
+  pointer-events: none;
   caret-color: transparent;
 }
 
+/* --- Command HUD --- */
 
+#hud {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 15vh;
+  z-index: 100;
+}
+
+#hud[hidden] {
+  display: none;
+}
+
+#hud-inner {
+  width: min(560px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#hud-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+  color: #fff;
+  font-size: clamp(1.25rem, 4vw, 1.75rem);
+  font-family: monospace;
+  padding: 8px 0;
+  outline: none;
+  caret-color: #fff;
+}
+
+#hud-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+#hud-commands {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  max-height: 50vh;
+}
+
+#hud-commands li {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+}
+
+.hud-cmd {
+  font-family: monospace;
+  font-size: clamp(0.85rem, 2.5vw, 1rem);
+  color: #fff;
+  white-space: nowrap;
+  min-width: 160px;
+}
+
+/* --- Notification toast --- */
+
+#notify {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30, 30, 30, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-family: sans-serif;
+  font-size: clamp(0.85rem, 2.5vw, 1rem);
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  text-align: center;
+  max-width: min(480px, 90vw);
+  z-index: 200;
+  pointer-events: none;
+}
+
+#notify[hidden] {
+  display: none;
+}
