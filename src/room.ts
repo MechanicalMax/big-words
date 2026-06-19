@@ -3,6 +3,7 @@ import { state } from './state.js';
 import { applyTheme, themeState } from './themes.js';
 import { render } from './renderer.js';
 import { announce } from './announcer.js';
+import { notify } from './notify.js';
 import { updateURL, clearRoomURL } from './url.js';
 
 // --- ROOM STATE ---
@@ -46,12 +47,12 @@ export function joinRoom(roomId: string): void {
     }
 
     if (msg.type === 'status' && !msg.hostActive) {
-      alert('The host has left. Refresh the page to try to become the new host.');
+      notify('The host has left. Refresh the page to try to become the new host.');
     }
   };
 
   ws.onerror = () => {
-    alert('Connection error. Please try again.');
+    notify('Connection error. Please try again.');
     _cleanup();
   };
 

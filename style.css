@@ -117,7 +117,26 @@ canvas {
   min-width: 160px;
 }
 
-.hud-desc {
-  font-size: clamp(0.8rem, 2.5vw, 0.95rem);
-  color: rgba(255, 255, 255, 0.5);
+/* --- Notification toast --- */
+
+#notify {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30, 30, 30, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-family: sans-serif;
+  font-size: clamp(0.85rem, 2.5vw, 1rem);
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  text-align: center;
+  max-width: min(480px, 90vw);
+  z-index: 200;
+  pointer-events: none;
+}
+
+#notify[hidden] {
+  display: none;
 }

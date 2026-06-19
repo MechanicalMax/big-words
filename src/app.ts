@@ -2,16 +2,16 @@ import { readURL } from './url.js';
 import { applyTheme, themeState, setRenderHandler } from './themes.js';
 import { render, resizeCanvas } from './renderer.js';
 import { keepFocused } from './input.js';
-import { setCommandHandler, setFocusHandler } from './hud.js';
+import { setCommandHandler, setFocusHandler, isOpen as isHUDOpen } from './hud.js';
 import { executeCommand } from './commands.js';
 import { joinRoom } from './room.js';
+import { setHUDStateProvider } from './notify.js';
 
 // --- WIRE CALLBACKS (breaks circular imports) ---
-// themes.ts needs render, hud.ts needs keepFocused — both registered here
-// so neither module needs to import from its dependent.
 setRenderHandler(render);
 setFocusHandler(keepFocused);
 setCommandHandler(executeCommand);
+setHUDStateProvider(isHUDOpen);
 
 // --- INIT ---
 const { roomId } = readURL();
