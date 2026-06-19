@@ -29,7 +29,7 @@
   <body>
     <div id="app">
       <!-- Canvas renders the text -->
-      <canvas id="stage" role="img" aria-label="Type!"></canvas>
+      <canvas id="stage" role="img" aria-label=""></canvas>
 
       <!-- Hidden input captures keyboard on desktop and mobile -->
       <input
@@ -45,7 +45,7 @@
       />
 
       <!-- Command HUD overlay -->
-      <div id="hud" aria-modal="true" aria-label="Command input" hidden>
+      <div id="hud" role="dialog" aria-modal="true" aria-label="Command input" hidden>
         <div id="hud-inner">
           <input
             id="hud-input"
@@ -70,6 +70,6 @@
       <div id="sr-live" aria-live="polite" aria-atomic="true" class="sr-only"></div>
       <div id="sr-hint" class="sr-only">Type to display text full screen. Press Enter to clear. Type / to open commands.</div>
     </div>
-    <script type="module" src="/main.js"></script>
+    <script type="module" src="/main.ts"></script>
   </body>
 </html>

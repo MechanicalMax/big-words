@@ -138,29 +138,32 @@ All WebSocket messages are JSON.
 
 ## 🏗️ Architecture
 
-The codebase is a single-page Vite app with a Cloudflare Worker backend. All source is TypeScript except for the canvas renderer and announcer which remain plain JS.
+The codebase is a single-page Vite app with a Cloudflare Worker backend. All source is TypeScript.
 
 ```
 src/
   protocol.ts     — shared message types, theme constants, command parser, wire helpers
   themes.ts       — theme registry and applyTheme(); imports Theme type from protocol.ts
-  state.js        — shared mutable { text } object
-  renderer.js     — canvas scaling and paint
-  announcer.js    — debounced screen reader announcements
+  state.ts        — shared mutable { text } object
+  renderer.ts     — canvas scaling and paint
+  announcer.ts    — debounced screen reader announcements
+  notify.ts       — non-blocking toast overlay for system messages
   input.ts        — keyboard capture, focus/fullscreen, HUD trigger, viewer gating
   hud.ts          — command HUD overlay, focus management, keydown handling
   commands.ts     — command executor, bridges HUD output to app actions
   room.ts         — WebSocket lifecycle, role state, broadcast, join/leave
   url.ts          — URL read/write, room-aware param handling
-  app.ts          — app entry point, init sequence, URL-based auto-join
+  app.ts          — app entry point, init sequence, callback wiring, URL-based auto-join
 
 worker/
   index.ts        — Cloudflare Worker router + Room Durable Object
 ```
 
+**Callback wiring:** modules that would otherwise create circular imports expose setter functions (`setRenderHandler`, `setFocusHandler`, `setCommandHandler`, `setHUDStateProvider`). `app.ts` registers all callbacks at startup — it sits at the top of the dependency graph and imports everything.
+
 **Source of truth for themes:** `VALID_THEMES` in `protocol.ts` defines the valid set. `themes.ts` imports it and uses `Record<Theme, ThemeConfig>` so TypeScript errors at compile time if a theme is added to one without the other. The worker uses `isValidTheme()` from `protocol.ts` to validate all inbound host messages and storage reads before broadcasting.
 
-**Adding a new theme:** add the name to `VALID_THEMES` in `protocol.ts`, add the config entry to `THEMES` in `themes.ts`. TypeScript will surface any mismatch.
+**Adding a new theme:** add the name to `VALID_THEMES` in `protocol.ts`, add the config entry to `THEMES` in `themes.ts`. TypeScript will surface any mismatch. The HUD reference list in `index.html` should also be updated.
 
 ## 🏗️ Deployment
 

@@ -35,8 +35,7 @@ export type ParseCommandResult =
 /**
  * Parse a raw input string into a Command.
  * Input must begin with "/" — call only when that is already known.
- * Returns an error string for any validation failure so the caller
- * can surface it via alert() without additional logic.
+ * Returns an error description for any validation failure.
  */
 export function parseCommand(raw: string): ParseCommandResult {
   const trimmed = raw.trim();

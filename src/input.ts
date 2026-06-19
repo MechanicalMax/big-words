@@ -84,9 +84,12 @@ window.addEventListener('keydown', (e) => {
 input.addEventListener('input', () => {
   const newValue = input.value;
 
-  // Open HUD when "/" is the only character on a blank screen.
-  // Available to all roles — viewers need this regardless of state.text to access /exit.
-  if (newValue === '/' && (state.text === '' || roomState.role === 'viewer')) {
+  // Open HUD when "/" is the only character typed.
+  // For hosts/solo: only when the screen is blank (state.text is empty).
+  // For viewers: always — they can't type on the canvas so state.text reflects
+  // the host's content, not their own input.
+  const isViewer = roomState.role === 'viewer' && roomState.connected;
+  if (newValue === '/' && (state.text === '' || isViewer)) {
     input.value = '';
     openHUD();
     return;
@@ -94,7 +97,7 @@ input.addEventListener('input', () => {
 
   // Viewers ignore all other canvas input — but preserve "/" so
   // the HUD check above always gets a chance to run first.
-  if (roomState.role === 'viewer' && roomState.connected) {
+  if (isViewer) {
     if (newValue !== '/') input.value = '';
     return;
   }

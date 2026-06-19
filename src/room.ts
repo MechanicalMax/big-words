@@ -58,7 +58,12 @@ export function joinRoom(roomId: string): void {
 
   ws.onclose = (e) => {
     // Ignore clean closes we triggered ourselves via leaveRoom().
-    if (!roomState.connected) return;
+    if (!roomState.connected) {
+      // Closed before role was assigned — likely a server-side rejection.
+      if (e.code !== 1000) notify('Could not connect to room. Please try again.');
+      _cleanup();
+      return;
+    }
     console.warn('[Room] WebSocket closed unexpectedly:', e.code, e.reason);
     _cleanup();
   };
