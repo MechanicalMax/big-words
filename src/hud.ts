@@ -1,5 +1,4 @@
 import { parseCommand } from './protocol';
-import { keepFocused } from './input.js';
 
 const hudEl    = document.getElementById('hud')    as HTMLDivElement;
 const hudInput = document.getElementById('hud-input') as HTMLInputElement;
@@ -8,8 +7,15 @@ const hudInput = document.getElementById('hud-input') as HTMLInputElement;
 type ExecuteFn = (result: ReturnType<typeof parseCommand>) => void;
 let onExecute: ExecuteFn = () => {};
 
+// Callback set by the caller — called when the HUD closes to return focus.
+let onClose: () => void = () => {};
+
 export function setCommandHandler(fn: ExecuteFn): void {
   onExecute = fn;
+}
+
+export function setFocusHandler(fn: () => void): void {
+  onClose = fn;
 }
 
 export function isOpen(): boolean {
@@ -25,7 +31,7 @@ export function openHUD(): void {
 export function closeHUD(): void {
   hudEl.hidden   = true;
   hudInput.value = '';
-  keepFocused();
+  onClose();
 }
 
 // --- INPUT HANDLING ---

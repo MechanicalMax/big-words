@@ -1,24 +1,25 @@
 import { state } from './state.js';
 import { themeState } from './themes.js';
-import { roomState } from './room.js';
 import { isValidTheme } from './protocol';
 
-export function updateURL(): void {
+/**
+ * Update the URL to reflect current app state.
+ * Pass roomId when in a room — drops ?m= and ?t= in that case.
+ * Pass null (or omit) for solo mode.
+ */
+export function updateURL(roomId: string | null = null): void {
   const params = new URLSearchParams();
 
-  if (roomState.connected || roomState.roomId) {
-    // In a room — only track the room ID.
-    params.set('room', roomState.roomId);
-  } else {
-    // Solo mode — track text and theme.
-    if (state.text) params.set('m', state.text);
-    if (themeState.name !== 'black') params.set('t', themeState.name);
-    // If both are defaults, push a clean "/" with no params.
-    history.replaceState(null, '', params.toString() ? '?' + params.toString() : '/');
+  if (roomId) {
+    params.set('room', roomId);
+    history.replaceState(null, '', '?' + params.toString());
     return;
   }
 
-  history.replaceState(null, '', '?' + params.toString());
+  // Solo mode — track text and theme.
+  if (state.text) params.set('m', state.text);
+  if (themeState.name !== 'black') params.set('t', themeState.name);
+  history.replaceState(null, '', params.toString() ? '?' + params.toString() : '/');
 }
 
 export function clearRoomURL(): void {
@@ -30,7 +31,6 @@ export function readURL(): { roomId: string | null } {
 
   const roomId = params.get('room');
   if (roomId) {
-    // Room join handled by app.ts after init — just return the ID.
     return { roomId };
   }
 

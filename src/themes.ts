@@ -1,4 +1,3 @@
-import { render } from './renderer.js';
 import { VALID_THEMES, type Theme } from './protocol';
 
 // --- THEME REGISTRY ---
@@ -17,7 +16,6 @@ export const THEMES: Record<Theme, ThemeConfig> = {
 };
 
 // Compile-time check: every entry in VALID_THEMES has a corresponding THEMES record.
-// If you add a theme to VALID_THEMES without adding it here, TypeScript will error.
 VALID_THEMES.forEach((name) => {
   if (!THEMES[name]) throw new Error(`Missing theme config for "${name}"`);
 });
@@ -31,11 +29,17 @@ export const themeState = {
   rafId: null as number | null,
 };
 
+// Render callback registered by app.ts — breaks the themes ↔ renderer cycle.
+let _render: () => void = () => {};
+export function setRenderHandler(fn: () => void): void {
+  _render = fn;
+}
+
 // --- ANIMATION ---
 
 function animateRainbow() {
   themeState.rainbowHue = (themeState.rainbowHue + 1) % 360;
-  render();
+  _render();
   themeState.rafId = requestAnimationFrame(animateRainbow);
 }
 
@@ -63,6 +67,6 @@ export function applyTheme(name: Theme): void {
   if (theme.rainbow) {
     animateRainbow();
   } else {
-    render();
+    _render();
   }
 }

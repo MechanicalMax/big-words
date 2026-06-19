@@ -22,7 +22,7 @@ export function joinRoom(roomId: string): void {
   ws = new WebSocket(`${proto}://${location.host}/room/${roomId}`);
 
   roomState.roomId = roomId;
-  updateURL(); // sets ?room=[id], drops ?m= and ?t=
+  updateURL(roomId); // sets ?room=[id], drops ?m= and ?t=
 
   ws.onopen = () => {
     // Don't mark connected yet — wait for the role assignment from the server.
