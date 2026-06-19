@@ -24,6 +24,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# TypeScript build cache
+*.tsbuildinfo
+
 # wrangler files
 .wrangler
 .dev.vars*
