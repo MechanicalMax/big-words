@@ -29,9 +29,9 @@
   <body>
     <div id="app">
       <!-- Canvas renders the text -->
-      <canvas id="stage" role="img" aria-label="Type!"></canvas>
+      <canvas id="stage" role="img" aria-label=""></canvas>
 
-      <!-- Hidden input captures keyboard on desktop; will be used for mobile too -->
+      <!-- Hidden input captures keyboard on desktop and mobile -->
       <input
         id="text-input"
         type="text"
@@ -44,10 +44,32 @@
         aria-describedby="sr-hint"
       />
 
+      <!-- Command HUD overlay -->
+      <div id="hud" role="dialog" aria-modal="true" aria-label="Command input" hidden>
+        <div id="hud-inner">
+          <input
+            id="hud-input"
+            type="text"
+            inputmode="text"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="/command"
+            aria-label="Enter a command"
+          />
+          <ul id="hud-commands" aria-label="Available commands">
+            <li><span class="hud-cmd">/theme [name]</span><span class="hud-desc">Switch theme — black, white, rainbow</span></li>
+            <li><span class="hud-cmd">/room [id]</span><span class="hud-desc">Join a live sync room</span></li>
+            <li><span class="hud-cmd">/exit</span><span class="hud-desc">Leave the current room</span></li>
+          </ul>
+        </div>
+      </div>
+
       <!-- Screen reader announcements -->
       <div id="sr-live" aria-live="polite" aria-atomic="true" class="sr-only"></div>
-      <div id="sr-hint" class="sr-only">Type to display text full screen. Press Enter to clear.</div>
+      <div id="sr-hint" class="sr-only">Type to display text full screen. Press Enter to clear. Type / to open commands.</div>
     </div>
-    <script type="module" src="/main.js"></script>
+    <script type="module" src="/main.ts"></script>
   </body>
 </html>

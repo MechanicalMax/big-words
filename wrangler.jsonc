@@ -1,14 +1,30 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "big-words",
-  "compatibility_date": "2026-05-13",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-05-15",
   "observability": {
     "enabled": true
   },
   "assets": {
-    "not_found_handling": "single-page-application"
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/room/*"]
   },
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ROOM",
+        "class_name": "Room"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["Room"]
+    }
   ]
 }
