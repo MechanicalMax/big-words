@@ -1,11 +1,11 @@
 import { state, fontFamily } from './state.js';
 import { themeState } from './themes.js';
 
-const canvas = document.getElementById('stage');
-const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('stage') as HTMLCanvasElement;
+const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
-export function resizeCanvas() {
-  const width = window.innerWidth;
+export function resizeCanvas(): void {
+  const width  = window.innerWidth;
   const height = window.innerHeight;
 
   canvas.style.width  = `${width}px`;
@@ -20,7 +20,7 @@ export function resizeCanvas() {
   render();
 }
 
-export function render() {
+export function render(): void {
   const { current: theme, rainbowHue } = themeState;
   const width  = window.innerWidth;
   const height = window.innerHeight;
@@ -39,11 +39,11 @@ export function render() {
   ctx.font = `${baseSize}px ${fontFamily}`;
   ctx.textBaseline = 'alphabetic';
 
-  const metrics = ctx.measureText(state.text);
-  const baseAscent   = metrics.actualBoundingBoxAscent;
-  const baseDescent  = metrics.actualBoundingBoxDescent;
-  const baseInkHeight = baseAscent + baseDescent;
-  const baseInkWidth  = metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight;
+  const metrics        = ctx.measureText(state.text);
+  const baseAscent     = metrics.actualBoundingBoxAscent;
+  const baseDescent    = metrics.actualBoundingBoxDescent;
+  const baseInkHeight  = baseAscent + baseDescent;
+  const baseInkWidth   = metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight;
 
   if (baseInkHeight === 0 || baseInkWidth === 0) return;
 
@@ -56,20 +56,17 @@ export function render() {
   ctx.font = `${finalFontSize}px ${fontFamily}`;
   ctx.textBaseline = 'alphabetic';
 
-  // Foreground color
+  // Foreground color — for rainbow, background was already filled above.
   if (theme.rainbow) {
-    const bgHue = (rainbowHue + 180) % 360;
-    ctx.fillStyle = `hsl(${bgHue}, 100%, 60%)`;
-    ctx.fillRect(0, 0, width, height);
     ctx.fillStyle = `hsl(${rainbowHue}, 100%, 60%)`;
   } else {
-    ctx.fillStyle = theme.fg;
+    // fg is guaranteed non-null for non-rainbow themes (see ThemeConfig in themes.ts).
+    ctx.fillStyle = theme.fg as string;
   }
 
   const startX = (width  - renderedInkWidth)  / 2 + metrics.actualBoundingBoxLeft * finalScaleFactor;
   const startY = (height - renderedInkHeight) / 2 + finalAscent;
 
   ctx.fillText(state.text, startX, startY);
-
   canvas.setAttribute('aria-label', state.text);
 }
